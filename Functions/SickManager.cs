@@ -61,10 +61,7 @@ namespace MODRP_JobMedic.Functions
             bool IsInGlobalZone = player.setup.NetworkareaId == 0;
 
 
-            if (IsNight && IsInGlobalZone)
-            {
-                ProbabilityMultiplier = 2f;
-            }
+            ProbabilityMultiplier = IsInGlobalZone ? (IsNight ? 2f : 1.5f) : 1f;
 
             Console.WriteLine("Temps en jeu : " + time);
             Console.WriteLine("Il est fait nuit ? " + IsNight);
