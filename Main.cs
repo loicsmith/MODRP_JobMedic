@@ -21,6 +21,7 @@ using MODRP_JobMedic.Functions;
 using Life.DB;
 using System;
 using System.Configuration;
+using System.Reflection;
 
 namespace MODRP_JobMedic.Main
 {
@@ -28,13 +29,17 @@ namespace MODRP_JobMedic.Main
     class Main : ModKit.ModKit
     {
         public SickManager sickManager = new SickManager();
+        public CureManager cureManager = new CureManager();
 
         public Main(IGameAPI api) : base(api)
         {
             PluginInformations = new PluginInformations(AssemblyHelper.GetName(), "1.0.0", "Loicsmith");
 
             sickManager.Context = this;
+            cureManager.Context = this;
         }
+
+        
 
         public override void OnPluginInit()
         {
@@ -50,11 +55,22 @@ namespace MODRP_JobMedic.Main
             Console.WriteLine(EnviroSkyMgr.instance.Time.cycleLengthInMinutes);
             Console.WriteLine(EnviroSkyMgr.instance.Time.dayNightSwitch);
 
+            
+
         }
 
         public void InitAAmenu()
         {
-            
+            _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Medical }, null, "Examiner symptômes", (ui) =>
+            {
+                Player player = PanelHelper.ReturnPlayerFromPanel(ui);
+                cureManager.CureAnalysis(player);
+            });
+            _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Medical }, null, "Soigner une maladie", (ui) =>
+            {
+                Player player = PanelHelper.ReturnPlayerFromPanel(ui);
+                cureManager.CureDisease(player);
+            });
         }
 
         public override void OnPlayerSpawnCharacter(Player player, NetworkConnection conn, Characters character)
@@ -63,6 +79,8 @@ namespace MODRP_JobMedic.Main
             sickManager.NL_DisableSickness(player);
 
             Nova.man.StartCoroutine(sickManager.DiseaseCheck(player));
+
+            sickManager.CheckDiseaseOnConnection(player);
         }
     }
 }
