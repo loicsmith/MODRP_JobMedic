@@ -1,8 +1,8 @@
-﻿using Life;
-using Life.Network;
+﻿using Life.Network;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 
@@ -29,12 +29,12 @@ namespace MODRP_JobMedic.Functions
 
         private List<Disease> Diseases;
 
-        private void InitDiseases()
+        public void InitDiseases()
         {
             Diseases = new List<Disease>
         {
-            new Disease("Rhume", 0.1f, 2f),
-            new Disease("Grippe", 0.05f, 5f),
+            new Disease("Rhume", 10f, 2f),
+            new Disease("Grippe", 5f, 5f),
         };
         }
 
@@ -52,7 +52,7 @@ namespace MODRP_JobMedic.Functions
             }
         }
 
-        public void CheckForDiseases(Player player)
+        public async void CheckForDiseases(Player player)
         {
             string time = EnviroSkyMgr.instance.GetTimeString();
             bool IsNight = EnviroSkyMgr.instance.Time.Hours >= 18 || EnviroSkyMgr.instance.Time.Hours <= 8;
@@ -60,51 +60,43 @@ namespace MODRP_JobMedic.Functions
 
             bool IsInGlobalZone = player.setup.NetworkareaId == 0;
 
-
             ProbabilityMultiplier = IsInGlobalZone ? (IsNight ? 2f : 1.5f) : 1f;
 
             Console.WriteLine("Temps en jeu : " + time);
             Console.WriteLine("Il est fait nuit ? " + IsNight);
             Console.WriteLine("Proba : " + ProbabilityMultiplier);
-            Console.WriteLine("Is dehors : " + IsInGlobalZone);
-             
-             var IsSick = OrmManager.JobMedic_SicknessManager.Query(a => a.PlayerCharacterId == player.character.Id).Result;
+            Console.WriteLine("Est dehors : " + IsInGlobalZone);
+            Console.WriteLine("___________");
 
-             foreach (var disease in Diseases)
-             {
-                 if (IsSick.Count != 0)
-                 {
-                     switch (disease.Name)
-                     {
-                         case "Rhume":
-                             break;
-                         case "Grippe":
-                             break;
-                     }
-                 }
-                 else
-                 {
-                     switch (disease.Name)
-                     {
-                         case "Rhume":
+            var IsSick = await OrmManager.JobMedic_SicknessManager.Query(a => a.PlayerCharacterId == player.character.Id);
 
-                             float ProbaRhume = disease.BaseProbability * ProbabilityMultiplier;
-                             if (UnityEngine.Random.Range(0f, 100f) <= ProbaRhume)
-                             {
-                                 Console.WriteLine($"{player.GetFullName()} vient de contracter {disease.Name}");
-                             }
-                             break;
-                         case "Grippe":
+            if (IsSick.Count != 0)
+            {
+                foreach (var Sick in IsSick)
+                {
+                    Console.WriteLine($"{player.GetFullName()} souffre toujours de {Sick.SickName}");
+                }
+            }
 
-                             float ProbaGrippe = disease.BaseProbability * ProbabilityMultiplier;
-                             if (UnityEngine.Random.Range(0f, 100f) <= ProbaGrippe)
-                             {
-                                 Console.WriteLine($"{player.GetFullName()} vient de contracter {disease.Name}");
-                             }
-                             break;
-                     }
-                 }
-             }
+            else
+            {
+                foreach (var disease in Diseases)
+                {
+                    float ProbaDisease = disease.BaseProbability * ProbabilityMultiplier;
+                    float ProbaRandom = UnityEngine.Random.Range(0f, 100f);
+
+                    Console.WriteLine(ProbaRandom + " --- " + ProbaDisease);
+                    if ( ProbaRandom <= ProbaDisease)
+                    {
+                        Console.WriteLine($"{player.GetFullName()} vient de contracter {disease.Name}");
+
+                        var SickData = new OrmManager.JobMedic_SicknessManager { PlayerCharacterId = player.character.Id, SickName = disease.Name };
+                        await SickData.Save();
+
+                        break;
+                    }
+                }
+            }
         }
 
     }

@@ -45,6 +45,8 @@ namespace MODRP_JobMedic.Main
 
             InitAAmenu();
 
+            sickManager.InitDiseases();
+
             Console.WriteLine(EnviroSkyMgr.instance.Time.cycleLengthInMinutes);
             Console.WriteLine(EnviroSkyMgr.instance.Time.dayNightSwitch);
 
