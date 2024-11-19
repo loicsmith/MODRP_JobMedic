@@ -1,5 +1,9 @@
 ﻿using Life;
+using Life.BizSystem;
+using Life.CheckpointSystem;
 using Life.Network;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace MODRP_JobMedic.Functions
 {
@@ -55,6 +59,40 @@ namespace MODRP_JobMedic.Functions
             {
                 player.Notify("Erreur", "Il n'y a personne à proximiter !", NotificationManager.Type.Error);
             }
+        }
+
+        public int CountMedicOnline()
+        {
+            int MedicPlayerOnline = 0;
+            foreach (Player p in Nova.server.GetAllInGamePlayers())
+            {
+                if (p.HasBiz() && p.serviceMetier)
+                {
+                    if (Nova.biz.GetBizActivities(p.character.BizId) == new List<Activity.Type> { Activity.Type.Medical })
+                    {
+                        MedicPlayerOnline += 1;
+                    }
+                }
+            }
+            return MedicPlayerOnline;
+        }
+
+        public void CureDiseaseCheckpoint(Player player)
+        {
+            NCheckpoint CurePoint = new NCheckpoint(player.netId, new Vector3(Main.Main._JobMedicConfig.PosX, Main.Main._JobMedicConfig.PosY, Main.Main._JobMedicConfig.PosZ), (checkpoint) =>
+            {
+                int MedicPlayer = CountMedicOnline();
+
+                if (MedicPlayer > 0)
+                {
+
+                }
+                else
+                {
+                    player.Notify("Soins", "Des médecins sont présents en ville, vous ne pouvez donc pas vous soignez !", NotificationManager.Type.Error);
+                }
+            });
+            player.CreateCheckpoint(CurePoint);
         }
     }
 }

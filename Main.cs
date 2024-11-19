@@ -22,6 +22,7 @@ using Life.DB;
 using System;
 using System.Configuration;
 using System.Reflection;
+using MODRP_JobMedic.Classes;
 
 namespace MODRP_JobMedic.Main
 {
@@ -30,6 +31,10 @@ namespace MODRP_JobMedic.Main
     {
         public SickManager sickManager = new SickManager();
         public CureManager cureManager = new CureManager();
+
+        public static string ConfigDirectoryPath;
+        public static string ConfigJobMedicPath;
+        public static JobMedicConfig _JobMedicConfig;
 
         public Main(IGameAPI api) : base(api)
         {
@@ -52,16 +57,55 @@ namespace MODRP_JobMedic.Main
 
             sickManager.InitDiseases();
 
-            Console.WriteLine(EnviroSkyMgr.instance.Time.cycleLengthInMinutes);
-            Console.WriteLine(EnviroSkyMgr.instance.Time.dayNightSwitch);
+            InitConfig();
+            _JobMedicConfig = LoadConfigFile(ConfigJobMedicPath);
 
-            
+        }
 
+        private void InitConfig()
+        {
+            try
+            {
+                ConfigDirectoryPath = DirectoryPath + "/JobMedic";
+                ConfigJobMedicPath = Path.Combine(ConfigDirectoryPath, "JobMedicConfig.json");
+
+                if (!Directory.Exists(ConfigDirectoryPath)) Directory.CreateDirectory(ConfigDirectoryPath);
+                if (!File.Exists(ConfigJobMedicPath)) InitJobMedicConfig();
+            }
+            catch (IOException ex)
+            {
+                ModKit.Internal.Logger.LogError("InitDirectory", ex.Message);
+            }
+        }
+
+        private void InitJobMedicConfig()
+        {
+            JobMedicConfig JobMedicConfig = new JobMedicConfig();
+            string json = JsonConvert.SerializeObject(JobMedicConfig, Formatting.Indented);
+            File.WriteAllText(ConfigJobMedicPath, json);
+        }
+
+        private JobMedicConfig LoadConfigFile(string path)
+        {
+            if (File.Exists(path))
+            {
+                string jsonContent = File.ReadAllText(path);
+                JobMedicConfig JobMedicConfig = JsonConvert.DeserializeObject<JobMedicConfig>(jsonContent);
+
+                return JobMedicConfig;
+            }
+            else return null;
+        }
+
+        private void SaveConfig(string path)
+        {
+            string json = JsonConvert.SerializeObject(_JobMedicConfig, Formatting.Indented);
+            File.WriteAllText(path, json);
         }
 
         public void InitAAmenu()
         {
-            _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Medical }, null, "Examiner symptômes", (ui) =>
+            _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Medical }, null, "Examiner les symptômes", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);
                 cureManager.CureAnalysis(player);
@@ -81,6 +125,8 @@ namespace MODRP_JobMedic.Main
             Nova.man.StartCoroutine(sickManager.DiseaseCheck(player));
 
             sickManager.CheckDiseaseOnConnection(player);
+
+            cureManager.CureDiseaseCheckpoint(player);
         }
     }
 }
