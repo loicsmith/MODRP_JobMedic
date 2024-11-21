@@ -192,5 +192,31 @@ namespace MODRP_JobMedic.Functions
                 player.Notify("Aucune maladie trouvée", "Votre patient n'est pas atteint(e) d'une maladie.", NotificationManager.Type.Info);
             }
         }
+
+        public async void CureDiseaseCheckpoint(Player player)
+        {
+            var activeDiseases = await OrmManager.JobMedic_SicknessManager.Query(a => a.PlayerCharacterId == player.character.Id);
+
+            if (activeDiseases.Count != 0)
+            {
+                foreach (var disease in activeDiseases)
+                {
+                    await disease.Delete();
+
+                    if (activeCoroutines.ContainsKey(player.character.Id))
+                    {
+                        Nova.man.StopCoroutine(activeCoroutines[player.character.Id]);
+                        activeCoroutines.Remove(player.character.Id);
+                    }
+
+                        player.Notify("Soins réussis", $"Vous avez été soigné(e) de votre {disease.SickName}. Vous vous sentez beaucoup mieux maintenant !", NotificationManager.Type.Success);
+                
+                }
+            }
+            else
+            {
+                player.Notify("Aucune maladie trouvée", "Vous n'êtes pas atteint(e) d'une maladie.", NotificationManager.Type.Info);
+            }
+        }
     }
 }
