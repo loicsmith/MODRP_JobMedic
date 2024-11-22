@@ -1,28 +1,21 @@
 ﻿using Life;
 using Life.BizSystem;
-using Life.CharacterSystem;
-using Life.FarmSystem;
+using Life.CheckpointSystem;
+using Life.DB;
 using Life.Network;
-using Life.Network.Systems;
 using Life.UI;
 using Mirror;
 using ModKit.Helper;
 using ModKit.Interfaces;
-using ModKit.Internal;
 using ModKit.ORM;
+using MODRP_JobMedic.Classes;
+using MODRP_JobMedic.Functions;
 using Newtonsoft.Json;
 using SQLite;
 using System.Collections.Generic;
 using System.IO;
-using _menu = AAMenu.Menu;
-using System.Collections;
 using UnityEngine;
-using MODRP_JobMedic.Functions;
-using Life.DB;
-using System;
-using System.Configuration;
-using System.Reflection;
-using MODRP_JobMedic.Classes;
+using _menu = AAMenu.Menu;
 
 namespace MODRP_JobMedic.Main
 {
@@ -44,7 +37,7 @@ namespace MODRP_JobMedic.Main
             cureManager.Context = this;
         }
 
-        
+
 
         public override void OnPluginInit()
         {
@@ -103,8 +96,92 @@ namespace MODRP_JobMedic.Main
             File.WriteAllText(path, json);
         }
 
+        public void ConfigEditor(Player player)
+        {
+            Panel panel = PanelHelper.Create("JobMedic | Config JSON", UIPanel.PanelType.TabPrice, player, () => ConfigEditor(player));
+
+            panel.AddTabLine($"{TextFormattingHelper.Color($"Position Point ${TextFormattingHelper.Color($"X : {_JobMedicConfig.PosX}, Y : {_JobMedicConfig.PosY}, Z : {_JobMedicConfig.PosZ}", TextFormattingHelper.Colors.Verbose)} :\n{TextFormattingHelper.Color(TextFormattingHelper.Size(TextFormattingHelper.LineHeight("Placement sur votre position lors de la sélection", 15), 15), TextFormattingHelper.Colors.Purple)}", TextFormattingHelper.Colors.Info)}", _ =>
+            {
+                _JobMedicConfig.PosX = player.setup.transform.position.x;
+                _JobMedicConfig.PosY = player.setup.transform.position.y;
+                _JobMedicConfig.PosZ = player.setup.transform.position.z;
+            });
+            panel.AddTabLine($"{TextFormattingHelper.Color("Prix Soins Maladie : ", TextFormattingHelper.Colors.Info)}" + $"{TextFormattingHelper.Color($"{_JobMedicConfig.PriceCure}", TextFormattingHelper.Colors.Verbose)}", _ =>
+            {
+                EditLineInConfig(player, "PriceCure");
+            });
+            panel.AddTabLine($"{TextFormattingHelper.Color("Appliquer la configuration", TextFormattingHelper.Colors.Success)}", _ =>
+            {
+                SaveConfig(ConfigJobMedicPath);
+                panel.Refresh();
+            });
+
+            panel.NextButton("Sélectionner", () => panel.SelectTab());
+            panel.AddButton("Retour", _ => AAMenu.AAMenu.menu.AdminPluginPanel(player));
+            panel.CloseButton();
+            panel.Display();
+        }
+
+        public void EditLineInConfig(Player player, string Param)
+        {
+            Panel panel = PanelHelper.Create("JobMedic | Edit JSON", UIPanel.PanelType.Input, player, () => EditLineInConfig(player, Param));
+            panel.TextLines.Add($"Modification de la valeur de : \"{Param}\"");
+            panel.SetInputPlaceholder("Veuillez saisir une valeur");
+            panel.AddButton("Valider", (ui) =>
+            {
+                string input = ui.inputText;
+
+                switch (Param)
+                {
+                    case "PriceCure":
+                        // float
+                        if (float.TryParse(input, out float Price))
+                        {
+                            _JobMedicConfig.PriceCure = Price;
+                        }
+                        else
+                        {
+                            player.Notify("JobMedic", "Veuillez saisir un nombre entier.", NotificationManager.Type.Error);
+                        }
+                        break;
+                }
+                panel.Previous();
+            });
+            panel.PreviousButton();
+            panel.CloseButton();
+            panel.Display();
+        }
+
+        public void CheckEditCheckpoint()
+        {
+            foreach (Player p in Nova.server.GetAllInGamePlayers())
+            {
+
+                // PAS BON çAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+                /*Vector3 PositionPoint = new Vector3(_JobMedicConfig.PosX, _JobMedicConfig.PosX, _JobMedicConfig.PosX);
+                foreach (NCheckpoint checkpoint in Nova.server.checkpoints)
+                {
+                    if (checkpoint.position == PositionPoint)
+
+                        foreach (Player p2 in Nova.server.GetAllInGamePlayers())
+                        {
+                            p2.DestroyCheckpoint(checkpoint);
+                        }
+                }*/
+
+                cureManager.CureDiseaseCheckpoint(p);
+            }
+        }
+
         public void InitAAmenu()
         {
+
+            _menu.AddAdminPluginTabLine(PluginInformations, 0, "JobMedic", (ui) =>
+            {
+                Player player = PanelHelper.ReturnPlayerFromPanel(ui);
+                ConfigEditor(player);
+            });
+
             _menu.AddBizTabLine(PluginInformations, new List<Activity.Type> { Activity.Type.Medical }, null, "Examiner les symptômes", (ui) =>
             {
                 Player player = PanelHelper.ReturnPlayerFromPanel(ui);

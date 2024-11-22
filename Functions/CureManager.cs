@@ -85,7 +85,7 @@ namespace MODRP_JobMedic.Functions
 
                 if (MedicPlayer > 0)
                 {
-
+                    SickManager.Instance.CureDiseaseCheckpointAction(player);
                 }
                 else
                 {

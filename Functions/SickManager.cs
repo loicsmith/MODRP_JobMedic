@@ -193,7 +193,7 @@ namespace MODRP_JobMedic.Functions
             }
         }
 
-        public async void CureDiseaseCheckpoint(Player player)
+        public async void CureDiseaseCheckpointAction(Player player)
         {
             var activeDiseases = await OrmManager.JobMedic_SicknessManager.Query(a => a.PlayerCharacterId == player.character.Id);
 
