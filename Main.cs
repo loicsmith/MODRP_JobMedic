@@ -29,6 +29,10 @@ namespace MODRP_JobMedic.Main
         public static string ConfigJobMedicPath;
         public static JobMedicConfig _JobMedicConfig;
 
+        float LastPosPointX;
+        float LastPosPointY;
+        float LastPosPointZ;
+
         public Main(IGameAPI api) : base(api)
         {
             PluginInformations = new PluginInformations(AssemblyHelper.GetName(), "1.0.0", "Loicsmith");
@@ -52,7 +56,6 @@ namespace MODRP_JobMedic.Main
 
             InitConfig();
             _JobMedicConfig = LoadConfigFile(ConfigJobMedicPath);
-
         }
 
         private void InitConfig()
@@ -102,18 +105,21 @@ namespace MODRP_JobMedic.Main
 
             panel.AddTabLine($"{TextFormattingHelper.Color($"Position Point ${TextFormattingHelper.Color($"X : {_JobMedicConfig.PosX}, Y : {_JobMedicConfig.PosY}, Z : {_JobMedicConfig.PosZ}", TextFormattingHelper.Colors.Verbose)} :\n{TextFormattingHelper.Color(TextFormattingHelper.Size(TextFormattingHelper.LineHeight("Placement sur votre position lors de la sélection", 15), 15), TextFormattingHelper.Colors.Purple)}", TextFormattingHelper.Colors.Info)}", _ =>
             {
+
+                LastPosPointX = _JobMedicConfig.PosX;
+                LastPosPointY = _JobMedicConfig.PosY;
+                LastPosPointZ = _JobMedicConfig.PosZ;
+
                 _JobMedicConfig.PosX = player.setup.transform.position.x;
                 _JobMedicConfig.PosY = player.setup.transform.position.y;
                 _JobMedicConfig.PosZ = player.setup.transform.position.z;
+
+                SaveConfig(ConfigJobMedicPath);
+                CheckEditCheckpoint();
             });
             panel.AddTabLine($"{TextFormattingHelper.Color("Prix Soins Maladie : ", TextFormattingHelper.Colors.Info)}" + $"{TextFormattingHelper.Color($"{_JobMedicConfig.PriceCure}", TextFormattingHelper.Colors.Verbose)}", _ =>
             {
                 EditLineInConfig(player, "PriceCure");
-            });
-            panel.AddTabLine($"{TextFormattingHelper.Color("Appliquer la configuration", TextFormattingHelper.Colors.Success)}", _ =>
-            {
-                SaveConfig(ConfigJobMedicPath);
-                panel.Refresh();
             });
 
             panel.NextButton("Sélectionner", () => panel.SelectTab());
@@ -138,6 +144,7 @@ namespace MODRP_JobMedic.Main
                         if (float.TryParse(input, out float Price))
                         {
                             _JobMedicConfig.PriceCure = Price;
+                            SaveConfig(ConfigJobMedicPath);
                         }
                         else
                         {
@@ -154,11 +161,10 @@ namespace MODRP_JobMedic.Main
 
         public void CheckEditCheckpoint()
         {
+
             foreach (Player p in Nova.server.GetAllInGamePlayers())
             {
-
-                // PAS BON çAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-                /*Vector3 PositionPoint = new Vector3(_JobMedicConfig.PosX, _JobMedicConfig.PosX, _JobMedicConfig.PosX);
+                Vector3 PositionPoint = new Vector3(LastPosPointX, LastPosPointY, LastPosPointZ);
                 foreach (NCheckpoint checkpoint in Nova.server.checkpoints)
                 {
                     if (checkpoint.position == PositionPoint)
@@ -167,7 +173,7 @@ namespace MODRP_JobMedic.Main
                         {
                             p2.DestroyCheckpoint(checkpoint);
                         }
-                }*/
+                }
 
                 cureManager.CureDiseaseCheckpoint(p);
             }
